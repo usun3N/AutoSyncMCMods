@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 import glob
 from os.path import exists
+from os.path import basename
 from os import mkdir
 from os import makedirs
 from os import remove
@@ -9,11 +10,11 @@ import requests
 import threading
 import shutil
 
-
 directory_path = ""
 selected_profile = ""
 profiles_path = glob.glob("./profiles/**")
 profiles_dict = {}
+update_mods = []
 
 
 def load_option():
@@ -62,11 +63,11 @@ def add_profile_thread(url, r_id, key):
         unpack_file(f"./profiles/{r_id}/mods.zip", f"{directory_path}/{r_id}/mods")  
         window[key].update("Profiles Reloading...")
         load_profiles()
-        window["-add_profile_state-"].update("Success!")
+        window[key].update("Success!")
     except:
-        window["-add_profile_state-"].update("Failed")
+        window[key].update("Failed")
     finally:
-        window["-add_profile_accept-"].update(disabled=False)
+        window[key].update(disabled=False)
     
 
 def add_profile(url):
@@ -84,23 +85,62 @@ def add_profile(url):
     dl = threading.Thread(target=add_profile_thread, args=(r_url, r_id, "-add_profile_state-"),daemon=True)
     dl.start()
 
+def update_thread(url, r_id, key, old_mods_list, info_url, r_name, r_version):
+    global update_mods
+    update_mods = []
+    if exists(f"./profiles/{r_id}/mods.zip"):
+        remove(f"./profiles/{r_id}/mods.zip")
+    window[key].update("Downloading...")
+    download_file(url, f"./profiles/{r_id}/mods.zip")
+    window[key].update("Making Directory...")
+    mkdir(f"./profiles/{r_id}/temp")
+    window[key].update("Unpacking...")
+    unpack_file(f"./profiles/{r_id}/mods.zip", f"./profiles/{r_id}/temp")
+    new_mods_list = set([basename(i) for i in glob.glob(f"./profiles/{r_id}/temp/*")])
+    add_mods = new_mods_list - old_mods_list
+    del_mods = old_mods_list - new_mods_list
+    for i in add_mods:
+        window["-update_mods_list-"].print(f"added {i}")
+        shutil.move(f"./profiles/{r_id}/temp/{i}", f"{directory_path}/{r_id}/mods")
+    for i in del_mods:
+        window["-update_mods_list-"].print(f"removed {i}")
+        remove(f"{directory_path}/{r_id}/mods/{i}")
+    
+    shutil.rmtree(f"./profiles/{r_id}/temp")
+
+    window[key].update("Updating infomation...")
+    w_data = "\n".join([r_id, r_name, info_url, r_version])
+    with open(f"./profiles/{r_id}/info.txt", "w") as f:
+            f.write(w_data)
+    
+    window[key].update("Profiles Reloading...")
+    load_profiles()
+    window["-profile_name-"].update(profiles_dict[combo_id]["name"])
+    window["-profile_id-"].update(combo_id)
+    window["-profile_version-"].update(profiles_dict[combo_id]["version"])
+    window["-update_check-"].update(disabled = False)
+    window[key].update("Success!")
+
+
 def check_update(id):
     o_name, o_url, o_version = profiles_dict[id]["name"], profiles_dict[id]["url"], profiles_dict[id]["version"]
-    
+
     try:
         data = requests.get(o_url).content.decode()
         r_id, r_name, r_url, r_version = str((data)).split("\n")
         if float(o_version) < float(r_version):
             window["-update_state-"].update("更新があります")
+            old_mods_list = set([basename(i) for i in glob.glob(f"{directory_path}/{r_id}/mods/*")])
+            dl = threading.Thread(target=update_thread, args=(r_url, r_id, "-update_state-", old_mods_list, o_url, r_name, r_version))
+            dl.start()
         else:
             window["-update_state-"].update("最新の状態です")
     except:
         window["-update_state-"].update("Failed")
-        return
     window["-update_check-"].update(disabled=False)
 
 def main():
-    global window, directory_path, selected_profile
+    global window, directory_path, selected_profile, combo_id
     combo_disable_flag = False
     load_option()
     load_profiles()
@@ -118,12 +158,14 @@ def main():
 
 
     sg.theme("SystemDefault1")
+    
     update_profile_tab = [[sg.Text("利用する起動構成を選択")],
                             [sg.Combo([profiles_dict[i]["name"] for i in list(profiles_dict)], key="-profile_combo-" ,enable_events=True, default_value=selected_profile, size=50)],
                             [sg.Text("Name:",size=6), sg.Text(pl_name, key="-profile_name-",)],
                             [sg.Text("ID:",size=6), sg.Text(pl_id, key="-profile_id-")],
                             [sg.Text("Version:",size=6), sg.Text(pl_version, key="-profile_version-")],
-                            [sg.Button("更新をチェック", key="-update_check-", disabled=False), sg.Text("", key="-update_state-")]]
+                            [sg.Button("更新をチェック", key="-update_check-", disabled=False), sg.Text("", key="-update_state-")],
+                            [sg.Multiline("",size=(400, 300), key="-update_mods_list-")]]
 
     add_profile_tab = [[sg.Text("URL")],
                        [sg.InputText(key="-add_profile_url-", size=40), sg.Button("貼り付け", key="-add_profile_url_paste-")],
