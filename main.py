@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import glob
 from os.path import exists
 import pyperclip
+import requests
 
 profiles_path = glob.glob("./profiles/**")
 profiles_dict = {}
@@ -26,11 +27,11 @@ def load_profiles():
             profile_id, profile_name, modpack_version, info_url = f.read().split("\n")
             profiles_dict[profile_id] = {"name" : profile_name, "version" : float(modpack_version), "url" : info_url}
 
-def get_info(url):
-    pass
 
 def add_profile(url):
-    pass
+    data = requests.get(url).content.decode()
+    print(str((data)).split("\n"))
+
 
 def main():
     global directory_path, selected_profile
@@ -71,6 +72,7 @@ def main():
         
         elif event =="-add_profile_accept-":
             window["-add_profile_accept-"].update(disabled=True)
+            add_profile(values["-add_profile_url-"])
     
     save_option()
     window.close()
