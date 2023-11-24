@@ -37,7 +37,7 @@ def load_profiles():
     global profiles_dict, dict_for_combo
     for path in profiles_path:
         with open(f"{path}/info.txt") as f:
-            profile_id, profile_name, info_url, modpack_version = f.read().split("\n")
+            profile_id, profile_name, info_url, modpack_version = f.read().split("\n")[0:4]
             profiles_dict[profile_id] = {"name" : profile_name, "url" : info_url, "version" : modpack_version}
     dict_for_combo = {profiles_dict[i]["name"] : i for i in list(profiles_dict)}
 
@@ -73,7 +73,7 @@ def add_profile_thread(url, r_id, key):
 def add_profile(url):
     try:
         data = requests.get(url).content.decode()
-        r_id, r_name, r_url, r_version = str((data)).split("\n")
+        r_id, r_name, r_url, r_version = str((data)).split("\n")[0:4]
         w_data = "\n".join([r_id, r_name, url, r_version])
         mkdir(f"./profiles/{r_id}")
         with open(f"./profiles/{r_id}/info.txt", "w") as f:
@@ -127,7 +127,7 @@ def check_update(id):
 
     try:
         data = requests.get(o_url).content.decode()
-        r_id, r_name, r_url, r_version = str((data)).split("\n")
+        r_id, r_name, r_url, r_version = str((data)).split("\n")[0:4]
         if float(o_version) < float(r_version):
             window["-update_state-"].update("更新があります")
             old_mods_list = set([basename(i) for i in glob.glob(f"{directory_path}/{r_id}/mods/*")])
