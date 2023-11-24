@@ -12,6 +12,8 @@ import shutil
 
 directory_path = ""
 selected_profile = ""
+if not exists("./profiles"):
+    mkdir("./profiles")
 profiles_path = glob.glob("./profiles/**")
 profiles_dict = {}
 update_mods = []
