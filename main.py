@@ -20,10 +20,10 @@ update_mods = []
 def load_option():
     global directory_path, selected_profile
     path = "./options.txt"
-    if exists(path):
+    try:
         with open(path) as f:
             directory_path, selected_profile = f.read().split("\n")
-    else:
+    except:
         with open(path, "w") as f:
             f.write("")
 
@@ -200,6 +200,7 @@ def main():
             window["-profile_name-"].update(profiles_dict[combo_id]["name"])
             window["-profile_id-"].update(combo_id)
             window["-profile_version-"].update(profiles_dict[combo_id]["version"])
+            combo_disable_flag = False
             window["-update_check-"].update(disabled = False)
 
 
