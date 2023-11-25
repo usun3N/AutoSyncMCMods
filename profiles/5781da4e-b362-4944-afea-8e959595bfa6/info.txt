@@ -1,4 +1,0 @@
-5781da4e-b362-4944-afea-8e959595bfa6
-pizza-mod-minecraft1
-https://raw.githubusercontent.com/usun3N/AutoSyncMCMods/main/info.txt
-1.1
