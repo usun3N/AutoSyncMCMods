@@ -69,7 +69,7 @@ def add_profile_thread(url, r_id, key):
     except:
         window[key].update("Failed")
     finally:
-        window[key].update(disabled=False)
+        window["-add_profile_accept-"].update(disabled=False)
     
 
 def add_profile(url):
